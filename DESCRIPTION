@@ -1,0 +1,21 @@
+Package: ersst
+Title: ersst local management of ERSST
+Description: Local management of ERSST (Extended Reconstructed Sea Surface Temperature).
+URL: https://github.com/BigelowLab/ersst
+Version: 0.1
+Depends:
+    R (>= 4.0)
+Imports:
+    utils,
+    rlang,
+    dplyr,
+    httr,
+    xml2,
+    rvest,
+    readr,
+    terra
+Maintainer: Ben Tupper <btupper@bigelow.org>
+Author: Ben Tupper <btupper@bigelow.org>
+License: MIT + file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.1.1

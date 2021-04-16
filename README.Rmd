@@ -1,0 +1,106 @@
+---
+title: "ERSST"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# ersst
+
+Provides for download, archiving and access to [errst](https://www.ncdc.noaa.gov/data-access/marineocean-data/extended-reconstructed-sea-surface-temperature-ersst-v5) online and local datasets.
+
+### [Citation](https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00927)
+
+```
+Boyin Huang, Peter W. Thorne, Viva F. Banzon, Tim Boyer, Gennady Chepurin, Jay H. Lawrimore, Matthew J. Menne, Thomas M. Smith, Russell S. Vose, and Huai-Min Zhang (2017): NOAA Extended Reconstructed Sea Surface Temperature (ERSST), Version 5. NOAA National Centers for Environmental Information. doi:10.7289/V5T72FNM [access date, monthly from 2021-04-15].
+```
+
+### Requirements
+
+  + [R v4+](https://www.r-project.org/)
+  + [rlang](https://CRAN.R-project.org/package=rlang)
+  + [dplyr](https://CRAN.R-project.org/package=dplyr)
+  + [readr](https://CRAN.R-project.org/package=readr)
+  + [terra](https://CRAN.R-project.org/package=terra)
+  + [xml2](https://CRAN.R-project.org/package=xml2)
+  + [httr](https://CRAN.R-project.org/package=httr)
+  + [rvest](https://github.com/BigelowLab/rvest)
+  
+
+### Installation
+
+```
+remotes::install_github("BigelowLab/ersst")
+```
+
+### List available file online
+
+It is easy to generate a listing of data files, organized by month, that are [availbale online](https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/).
+
+```{r list, message = FALSE}
+library(dplyr)
+library(ersst)
+
+online_db <- ncdc_list_available(version = "v5")
+online_db
+```
+
+The anomaly column indicates if the file is for `sst` or `sst anomaly` - a bit of a red herring in this case.  It will become important later, but in the meantime know that each online file contains 2 layers: `sst` or `sst anomaly`.  The anomaly computation is [discussed here](https://www.ncdc.noaa.gov/data-access/marineocean-data/extended-reconstructed-sea-surface-temperature-ersst-v5).
+
+
+### Download online data
+
+For a URL by date and version, then download.
+
+```{r download_one}
+uri <- ncdc_build_uri(as.Date("2021-03-17"), version = "v5")
+# [1] "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202103.nc"
+ok <- download_ersst(uri, path = ".")
+ok
+```
+
+Each file contains 2 layers: `sst` and `ssta`
+
+```{r read_and_show}
+library(stars)
+s <- read_stars(names(ok))
+s
+```
+
+### Download a series, unpack and save
+
+If you are developing a local repository of the data, you can use built-in capabilities of `fetch_ersst()`. Each layer is saved separately as either `ersst.vv.YYYYmm.tif` or `erssta.vv.YYYYmm.tif`.  Returned is a database of the fetched-and-stored contents.
+
+```{r download_suite}
+root_path <- "~/ersst_data"
+dates <- seq(from = as.Date("2020-11-15"), by = "month", length = 4)
+db <- fetch_ersst(dates, version = 'v5', path = root_path)
+db
+```
+
+You will likely want to save this database. Note that it is bbest to save it with the version.  Who knows when the next version will be released, but best practice is to be ready for it. If you have an exisiting database, you can append the new database to it before saving.
+
+```{r save_database}
+v5_path <- ersst_path("v5", root = root_path)
+all_db <- read_database(v5_path) %>%
+  append_database(db) %>%
+  write_database(v5_path)
+```
+
+### Using the local database
+
+If you have kept a database file (and if you mess your up, see `build_database()`) then you can use it to easily find the files you want without having to search the directories.
+
+```{r filter_database}
+sub_db <- read_database(v5_path) %>%
+  filter(anomaly == TRUE, 
+         between(date, min(dates), max(dates)))
+sub_filenames <- compose_filename(sub_db, root_path)
+ss <- read_stars(sub_filenames, along = "band")
+breaks <- 11
+plot(ss, 
+     main = format(dates, "anonamly %Y-%b"),
+     col = heat.colors(breaks))
+```

@@ -5,15 +5,18 @@
 \title{Retrieve a listing of the \code{filenames} currently posted by NCDC/NCEI
 of available ERSST.}
 \usage{
-ncdc_list_available(version = "v5", simplify = TRUE)
+ncdc_list_available(version = "v5", simplify = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{version}{character, ala "v5"}
 
-\item{simplify}{logical, if TRUE then make the returned tibble easier tp work with}
+\item{simplify}{logical, if TRUE then make the returned tibble easier to work with}
+
+\item{verbose}{logical, chatter if TRUE}
 }
 \value{
-tibble of posted files (includes columns 'Name', 'Last modified', 'Size' and 'Description') unless \code{simply = TRUE} in which case
+tibble of posted files (includes columns 'Name', 'Last modified', 'Size' and 'Description') unless
+   \code{simply = TRUE} in which case it is transformed to a datbase of date, anomaly and verison
 }
 \description{
 Retrieve a listing of the \code{filenames} currently posted by NCDC/NCEI

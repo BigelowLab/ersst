@@ -8,7 +8,9 @@ fetch_ersst(
   date = Sys.Date(),
   version = "v5",
   path = "./ersst_data",
-  overwrite = TRUE
+  avail_db = NULL,
+  overwrite = TRUE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -19,7 +21,12 @@ fetch_ersst(
 \item{path}{character, the output path. Version subdirectory and
 years subdirectories are made by default.}
 
+\item{avail_db}{tibble, the current listing available ala \code{ncdc_list_available}
+If not provided then \code{ncdc_list_available} is called.}
+
 \item{overwrite}{logical, if TRUE overwrite existing file(s)}
+
+\item{verbose}{logical, if TRUE then output messages}
 }
 \value{
 a database tibble (date and version)

@@ -16,11 +16,14 @@ ncdc_uri <- function(version = "v5",
 #'
 #' @export
 #' @param version, character, ala "v5"
+#' @param append_slash lofical, if TRUE append "/" to the end
 #' @return character uri
-ncdc_list_uri <- function(version = "v5"){
-  switch(version[1],
+ncdc_list_uri <- function(version = "v5", append_slash = TRUE){
+  u <- switch(version[1],
     "v4" = "https://www1.ncdc.noaa.gov/pub/data/cmb/ersst/v4/netcdf",
-    "v5" =  "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf")
+           "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf")
+  if (append_slash) u <- paste0(u, "/")
+  u
 }
 
 #' Retrieve a listing of the \code{filenames} currently posted by NCDC/NCEI
@@ -28,10 +31,13 @@ ncdc_list_uri <- function(version = "v5"){
 #'
 #' @export
 #' @param version character, ala "v5"
-#' @param simplify logical, if TRUE then make the returned tibble easier tp work with
-#' @return tibble of posted files (includes columns 'Name', 'Last modified', 'Size' and 'Description') unless \code{simply = TRUE} in which case
-ncdc_list_available <- function(version = "v5", simplify = TRUE){
-  uri <- ncdc_list_uri(version=version)
+#' @param simplify logical, if TRUE then make the returned tibble easier to work with
+#' @param verbose logical, chatter if TRUE
+#' @return tibble of posted files (includes columns 'Name', 'Last modified', 'Size' and 'Description') unless
+#'    \code{simply = TRUE} in which case it is transformed to a datbase of date, anomaly and verison
+ncdc_list_available <- function(version = "v5", simplify = TRUE, verbose = FALSE){
+  uri <- ncdc_list_uri(version=version, append_slash = TRUE)
+  if (verbose) cat("ncdc_list_available: GETting", uri, "\n")
   x <- httr::GET(uri)
   httr::stop_for_status(x, task = paste("read uri:", uri))
   r <- httr::content(x, type = "text", encoding = 'UTF-8') %>%
@@ -41,7 +47,9 @@ ncdc_list_available <- function(version = "v5", simplify = TRUE){
     rvest::html_table() %>%
     dplyr::as_tibble() %>%
     dplyr::filter(grepl("ersst", .data$Name, fixed = TRUE))
+
   if (simplify){
+    if (verbose) ("ncdc_list_available: simplifying\n")
     r <- r %>%
       dplyr::pull(.data$Name) %>%
       decompose_filename(ext = ".nc")
@@ -90,7 +98,7 @@ ncdc_build_uri <- function(date = seq(from = as.Date("1854-01-01"),
   date <- lut[ix]
 
 
-  u <- ncdc_list_uri(version=version[1])
+  u <- ncdc_list_uri(version=version[1], append_slash = FALSE)
 
   pattern  <- paste0(sprintf("ersst.%s.", version[1]), "%s.nc")
   file.path(u, sprintf(pattern, format(date, "%Y%m")))
@@ -102,12 +110,16 @@ ncdc_build_uri <- function(date = seq(from = as.Date("1854-01-01"),
 #' @export
 #' @param uri character the URI of the file to downlaod with \code{download.file}
 #' @param path charcater the name of the path to download to
+#' @param verbose logical, if TRUE then output messages
 #' @return named logical where TRUE indicates success, name is the filename
 download_ersst <- function(
   uri = "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.185401.nc",
-  path = tempdir()){
+  path = tempdir(),
+  verbose = FALSE){
 
   filename <- file.path(path[1], basename(uri[1]))
+  if (verbose) cat("download_ersst: downloading", uri, "\n")
+  if (verbose) cat("download_ersst: to", filename, "\n")
   ok <- utils::download.file(uri[1],
                              destfile = filename,
                              mode = "wb")
@@ -122,12 +134,17 @@ download_ersst <- function(
 #' @param version character, the version
 #' @param path character, the output path. Version subdirectory and
 #'   years subdirectories are made by default.
+#' @param avail_db tibble, the current listing available ala \code{ncdc_list_available}
+#'    If not provided then \code{ncdc_list_available} is called.
 #' @param overwrite logical, if TRUE overwrite existing file(s)
+#' @param verbose logical, if TRUE then output messages
 #' @return a database tibble (date and version)
 fetch_ersst <- function(date = Sys.Date(),
                         version = "v5",
                         path = "./ersst_data",
-                        overwrite = TRUE){
+                        avail_db = NULL,
+                        overwrite = TRUE,
+                        verbose = FALSE){
 
 
   # generate REQUEST uris
@@ -137,12 +154,14 @@ fetch_ersst <- function(date = Sys.Date(),
   # download
   # extract with stars
   # save as tiff to version path
+  if (verbose) cat("fetch_ersst: building request list\n")
   request_uri <- ncdc_build_uri(date = date, version = version)
   request_db <- decompose_filename(request_uri, ext = ".nc")
-  avail_db <- ncdc_list_available(version = version)
+  if (is.null(avail_db)) avail_db <- ncdc_list_available(version = version,
+                                                         verbose = verbose)
 
   fetch_one <- function(x, key, path = "."){
-    ok <- download_ersst(x$uri)
+    ok <- download_ersst(x$uri, verbose = verbose)
     if (ok){
       filename <- names(ok)
       db <- decompose_filename(filename)
@@ -153,6 +172,7 @@ fetch_ersst <- function(date = Sys.Date(),
       files <- compose_filename(db, path)
       ok <- sapply(dirname(files), dir.create, recursive = TRUE, showWarnings = FALSE)
       for (i in seq_len(length(files))){
+          if (verbose) cat("fetch_ersst: writing file", files[i], "\n")
           terra::writeRaster(s[[i]], files[i], overwrite = overwrite)
       }
       ok <- unlink(filename)
@@ -161,7 +181,7 @@ fetch_ersst <- function(date = Sys.Date(),
     }
     db
   }
-
+  if (verbose) cat("fetch_ersst: pooling databases\n")
   dplyr::semi_join(avail_db, request_db, by = "date") %>%
     dplyr::mutate(uri = ncdc_build_uri(date = .data$date, version = .data$version)) %>%
     dplyr::rowwise() %>%

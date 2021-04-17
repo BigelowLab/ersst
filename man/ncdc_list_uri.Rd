@@ -4,10 +4,12 @@
 \alias{ncdc_list_uri}
 \title{Returns the known base URIs for file listings}
 \usage{
-ncdc_list_uri(version = "v5")
+ncdc_list_uri(version = "v5", append_slash = TRUE)
 }
 \arguments{
 \item{version, }{character, ala "v5"}
+
+\item{append_slash}{lofical, if TRUE append "/" to the end}
 }
 \value{
 character uri

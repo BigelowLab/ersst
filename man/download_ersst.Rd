@@ -6,13 +6,16 @@
 \usage{
 download_ersst(
   uri = "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.185401.nc",
-  path = tempdir()
+  path = tempdir(),
+  verbose = FALSE
 )
 }
 \arguments{
 \item{uri}{character the URI of the file to downlaod with \code{download.file}}
 
 \item{path}{charcater the name of the path to download to}
+
+\item{verbose}{logical, if TRUE then output messages}
 }
 \value{
 named logical where TRUE indicates success, name is the filename

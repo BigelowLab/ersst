@@ -130,9 +130,9 @@ s
 If you are developing a local repository of the data, you can use
 built-in capabilities of `fetch_ersst()`. Each layer is saved separately
 as either `ersst.vv.YYYYmm.tif` or `erssta.vv.YYYYmm.tif`. Returned is a
-database of the fetched-and-stored contents. Note that pass in the
-available online database listing; this just saves the time needed to
-repeat the query.
+database of the fetched-and-stored contents. Note that you can pass in
+the available online database listing; this just saves the time needed
+to repeat the query.
 
 ``` r
 root_path <- "~/ersst_data"
@@ -143,19 +143,19 @@ db <- fetch_ersst(dates, version = 'v5', path = root_path, verbose = TRUE, avail
     ## fetch_ersst: building request list
     ## fetch_ersst: pooling databases
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202011.nc 
-    ## download_ersst: to /tmp/RtmpWRl7pj/ersst.v5.202011.nc 
+    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202011.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/ersst.v5.202011.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/erssta.v5.202011.tif 
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202012.nc 
-    ## download_ersst: to /tmp/RtmpWRl7pj/ersst.v5.202012.nc 
+    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202012.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/ersst.v5.202012.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/erssta.v5.202012.tif 
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202101.nc 
-    ## download_ersst: to /tmp/RtmpWRl7pj/ersst.v5.202101.nc 
+    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202101.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/ersst.v5.202101.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/erssta.v5.202101.tif 
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202102.nc 
-    ## download_ersst: to /tmp/RtmpWRl7pj/ersst.v5.202102.nc 
+    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202102.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/ersst.v5.202102.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/erssta.v5.202102.tif
 
@@ -201,7 +201,7 @@ sub_filenames <- compose_filename(sub_db, root_path)
 ss <- read_stars(sub_filenames, along = "band")
 breaks <- 11
 plot(ss, 
-     main = format(sub_db$date, "anonamly %Y-%b"),
+     main = format(sub_db$date, "anomaly %Y-%b"),
      col = heat.colors(breaks))
 ```
 

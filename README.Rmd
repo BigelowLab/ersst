@@ -71,7 +71,7 @@ s
 
 ### Download a series, unpack and save
 
-If you are developing a local repository of the data, you can use built-in capabilities of `fetch_ersst()`. Each layer is saved separately as either `ersst.vv.YYYYmm.tif` or `erssta.vv.YYYYmm.tif`.  Returned is a database of the fetched-and-stored contents. Note that pass in the available online database listing; this just saves the time needed to repeat the query.
+If you are developing a local repository of the data, you can use built-in capabilities of `fetch_ersst()`. Each layer is saved separately as either `ersst.vv.YYYYmm.tif` or `erssta.vv.YYYYmm.tif`.  Returned is a database of the fetched-and-stored contents. Note that you can pass in the available online database listing; this just saves the time needed to repeat the query.
 
 ```{r download_suite}
 root_path <- "~/ersst_data"
@@ -100,6 +100,6 @@ sub_filenames <- compose_filename(sub_db, root_path)
 ss <- read_stars(sub_filenames, along = "band")
 breaks <- 11
 plot(ss, 
-     main = format(sub_db$date, "anonamly %Y-%b"),
+     main = format(sub_db$date, "anomaly %Y-%b"),
      col = heat.colors(breaks))
 ```

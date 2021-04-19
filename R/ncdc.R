@@ -120,9 +120,10 @@ download_ersst <- function(
   filename <- file.path(path[1], basename(uri[1]))
   if (verbose) cat("download_ersst: downloading", uri, "\n")
   if (verbose) cat("download_ersst: to", filename, "\n")
-  ok <- utils::download.file(uri[1],
+  ok <- try(utils::download.file(uri[1],
                              destfile = filename,
-                             mode = "wb")
+                             mode = "wb"))
+  if (inherits(ok, 'try-error')) print(ok)
   sapply(filename, file.exists)
 }
 

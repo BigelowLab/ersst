@@ -35,6 +35,78 @@ Boyin Huang, Peter W. Thorne, Viva F. Banzon, Tim Boyer, Gennady Chepurin, Jay H
 remotes::install_github("BigelowLab/ersst")
 ```
 
+
+```{r}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(sf)
+  library(ersst)
+  library(xyzt)
+  library(stars)
+})
+```
+
+#### Working with points.  
+
+See the [xyzt](https://github.com/BigelowLab/xyzt) package for more details on the example Gulf of Maine data.
+
+```{r}
+# read in example GOM points
+x <- xyzt::read_gom() |>
+  dplyr::select(-time, -depth) |>
+  xyzt::as_POINT()
+
+# generate a ersst url for a given date
+url <- ersst_url("2018-12-18")
+
+# download
+temp_file <- tempfile(fileext = ".nc")
+ok <- download.file(url, temp_file)
+
+# open the resource
+X <- ncdf4::nc_open(temp_file)
+
+# extract the data 
+covars <- ersst::extract(x, X, varname = ersst_vars(X))
+
+# bind to the input
+(y <- dplyr::bind_cols(x, covars))
+```
+
+#### Working with bounding boxes (from points or polygons). 
+
+Learn more about working with [stars](https://CRAN.R-project.org/package=stars) objects in the [vignettes](https://r-spatial.github.io/stars/).
+
+```{r}
+# read in example GOM points
+x <- xyzt::read_gom() |>
+  dplyr::select(-time, -depth) |>
+  xyzt::as_BBOX()
+
+(covars <- ersst::extract(x, X, varnames = ersst::ersst_vars(X)))
+```
+
+Now let's see what it looks like.
+
+```{r}
+x <- xyzt::read_gom() |>
+  dplyr::select(-time, -depth) |>
+  xyzt::as_POINT()
+par(mfrow = c(1,2))
+plot(covars, attr = 'sst', axes = TRUE, reset = FALSE)
+plot(sf::st_geometry(x), add = TRUE, col = "orange", pch = 19, cex = 2)
+```
+
+
+
+```{r}
+# cleanup
+ncdf4::nc_close(X)
+```
+
+
+### Old README
+
 ### List available file online
 
 It is easy to generate a listing of data files, organized by month, that are [available online](https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/).

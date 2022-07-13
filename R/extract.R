@@ -1,24 +1,3 @@
-# #' Get geometry dimension code
-# #' 
-# #' @export
-# #' @param x sf or sfc object
-# #' @return character vector such as "XY" or "XYZ"
-# get_geometry_dimension <- function(x){
-#   x <- sf::st_geometry(x)
-#   sort(unique(sapply(x, function(x) class(x)[1])))
-# }
-# 
-# 
-# #' Get geometry type code
-# #' 
-# #' @export
-# #' @param x sf or sfc object
-# #' @return character vector such as "POINT" or "POLYGON"
-# get_geometry_type <- function(x){
-#   klass <- sf::st_geometry(x) |>
-#     class()
-#   sub("sfc_", "", klass[1])
-# }
 
 #' extract generic
 #'
@@ -59,6 +38,7 @@ extract.sf <- function(x, y = NULL,
            g <- sf::st_geometry(x)
            r <- extract(g, y = y, varname = varname, verbose = verbose, ...)
           },
+         #"BBOX" = {do something ?}
          "POLYGON" = {
            g <- sf::st_geometry(x)
            ss <- lapply(varname,

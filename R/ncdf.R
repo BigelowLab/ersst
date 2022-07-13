@@ -172,7 +172,7 @@ ersst_nc_nav_bb <- function(X, g,
 
   bb2 <- bb + c(-half[1], half[1], -half[2], half[2])
   ix <- sapply(bb2[1:2],
-               function(xbb) which.min(abs(X$dim$lon$vals-xbb)))
+               function(xbb) which.min(abs(X$dim$lon$vals - xbb)))
   we <- X$dim$lon$vals[ix]
   iy <- sapply(bb2[3:4],
                function(ybb) which.min(abs(X$dim$lat$vals-ybb)))

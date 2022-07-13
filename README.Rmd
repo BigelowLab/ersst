@@ -48,12 +48,13 @@ suppressPackageStartupMessages({
 
 #### Working with points.  
 
-See the [xyzt](https://github.com/BigelowLab/xyzt) package for more details on the example Gulf of Maine data.
+See the [xyzt](https://github.com/BigelowLab/xyzt) package for more details on the example Southern US Atlantic Bight data.
 
 ```{r}
-# read in example GOM points
-x <- xyzt::read_gom() |>
+# read in example SAB points
+x <- xyzt::read_sab() |>
   dplyr::select(-time, -depth) |>
+  dplyr::mutate(lon = xyzt::to_360(lon)) |>
   xyzt::as_POINT()
 
 # generate a ersst url for a given date
@@ -78,9 +79,10 @@ covars <- ersst::extract(x, X, varname = ersst_vars(X))
 Learn more about working with [stars](https://CRAN.R-project.org/package=stars) objects in the [vignettes](https://r-spatial.github.io/stars/).
 
 ```{r}
-# read in example GOM points
-x <- xyzt::read_gom() |>
+# read in example SAB points
+x <- xyzt::read_sab() |>
   dplyr::select(-time, -depth) |>
+  dplyr::mutate(lon = xyzt::to_360(lon)) |>
   xyzt::as_BBOX()
 
 (covars <- ersst::extract(x, X, varnames = ersst::ersst_vars(X)))
@@ -89,8 +91,9 @@ x <- xyzt::read_gom() |>
 Now let's see what it looks like.
 
 ```{r}
-x <- xyzt::read_gom() |>
+x <- xyzt::read_sab() |>
   dplyr::select(-time, -depth) |>
+  dplyr::mutate(lon = xyzt::to_360(lon)) |>
   xyzt::as_POINT()
 par(mfrow = c(1,2))
 plot(covars, attr = 'sst', axes = TRUE, reset = FALSE)

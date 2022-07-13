@@ -13,18 +13,118 @@ online and local datasets.
 
 ### Requirements
 
-  - [R v4+](https://www.r-project.org/)
-  - [rlang](https://CRAN.R-project.org/package=rlang)
-  - [dplyr](https://CRAN.R-project.org/package=dplyr)
-  - [readr](https://CRAN.R-project.org/package=readr)
-  - [terra](https://CRAN.R-project.org/package=terra)
-  - [xml2](https://CRAN.R-project.org/package=xml2)
-  - [httr](https://CRAN.R-project.org/package=httr)
-  - [rvest](https://github.com/BigelowLab/rvest)
+-   [R v4+](https://www.r-project.org/)
+-   [rlang](https://CRAN.R-project.org/package=rlang)
+-   [dplyr](https://CRAN.R-project.org/package=dplyr)
+-   [readr](https://CRAN.R-project.org/package=readr)
+-   [terra](https://CRAN.R-project.org/package=terra)
+-   [xml2](https://CRAN.R-project.org/package=xml2)
+-   [httr](https://CRAN.R-project.org/package=httr)
+-   [rvest](https://github.com/BigelowLab/rvest)
 
 ### Installation
 
     remotes::install_github("BigelowLab/ersst")
+
+``` r
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(sf)
+  library(ersst)
+  library(xyzt)
+  library(stars)
+})
+```
+
+#### Working with points.
+
+See the [xyzt](https://github.com/BigelowLab/xyzt) package for more
+details on the example Southern US Atlantic Bight data.
+
+``` r
+# read in example SAB points
+x <- xyzt::read_sab() |>
+  dplyr::select(-time, -depth) |>
+  dplyr::mutate(lon = xyzt::to_360(lon)) |>
+  xyzt::as_POINT()
+
+# generate a ersst url for a given date
+url <- ersst_url("2018-12-18")
+
+# download
+temp_file <- tempfile(fileext = ".nc")
+ok <- download.file(url, temp_file)
+
+# open the resource
+X <- ncdf4::nc_open(temp_file)
+
+# extract the data 
+covars <- ersst::extract(x, X, varname = ersst_vars(X))
+
+# bind to the input
+(y <- dplyr::bind_cols(x, covars))
+```
+
+    ## Simple feature collection with 5 features and 4 fields
+    ## Geometry type: POINT
+    ## Dimension:     XY
+    ## Bounding box:  xmin: 279.815 ymin: 28.508 xmax: 287.752 ymax: 34.714
+    ## Geodetic CRS:  WGS 84
+    ## # A tibble: 5 × 5
+    ##   id    name                   geometry   sst  ssta
+    ## * <chr> <chr>               <POINT [°]> <dbl> <dbl>
+    ## 1 41009 Canveral       (279.815 28.508)  24.9 0.615
+    ## 2 41010 Canaveral East (281.515 28.878)  25.3 0.704
+    ## 3 41002 South Hatteras (285.064 31.759)  23.2 0.745
+    ## 4 41001 East Hatteras  (287.752 34.714)  22.2 0.695
+    ## 5 41004 EDISTO         (280.901 32.502)  23.5 0.709
+
+#### Working with bounding boxes (from points or polygons).
+
+Learn more about working with
+[stars](https://CRAN.R-project.org/package=stars) objects in the
+[vignettes](https://r-spatial.github.io/stars/).
+
+``` r
+# read in example SAB points
+x <- xyzt::read_sab() |>
+  dplyr::select(-time, -depth) |>
+  dplyr::mutate(lon = xyzt::to_360(lon)) |>
+  xyzt::as_BBOX()
+
+(covars <- ersst::extract(x, X, varnames = ersst::ersst_vars(X)))
+```
+
+    ## stars object with 2 dimensions and 2 attributes
+    ## attribute(s):
+    ##              Min.    1st Qu.     Median       Mean   3rd Qu.       Max. NA's
+    ## sst   16.24015236 22.1057224 23.5719891 22.9032807 24.464281 25.3353024    7
+    ## ssta  -0.08033943  0.5540829  0.7091904  0.6136197  0.751174  0.8032494    7
+    ## dimension(s):
+    ##   from to  offset   delta refsys point values x/y
+    ## x    1  6 279.815 1.32283 WGS 84    NA   NULL [x]
+    ## y    1  5  34.714 -1.2412 WGS 84    NA   NULL [y]
+
+Now let’s see what it looks like.
+
+``` r
+x <- xyzt::read_sab() |>
+  dplyr::select(-time, -depth) |>
+  dplyr::mutate(lon = xyzt::to_360(lon)) |>
+  xyzt::as_POINT()
+par(mfrow = c(1,2))
+plot(covars, attr = 'sst', axes = TRUE, reset = FALSE)
+plot(sf::st_geometry(x), add = TRUE, col = "orange", pch = 19, cex = 2)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+# cleanup
+ncdf4::nc_close(X)
+```
+
+### Old README
 
 ### List available file online
 
@@ -45,7 +145,7 @@ online_db <- ncdc_list_available(version = "v5", verbose = TRUE)
 online_db
 ```
 
-    ## # A tibble: 2,007 x 3
+    ## # A tibble: 2,022 × 3
     ##    date       anomaly version
     ##    <date>     <lgl>   <chr>  
     ##  1 1854-01-01 FALSE   v5     
@@ -58,7 +158,7 @@ online_db
     ##  8 1854-08-01 FALSE   v5     
     ##  9 1854-09-01 FALSE   v5     
     ## 10 1854-10-01 FALSE   v5     
-    ## # … with 1,997 more rows
+    ## # … with 2,012 more rows
 
 The anomaly column indicates if the file is for `sst` or `sst anomaly` -
 a bit of a red herring in this case. It will become important later, but
@@ -90,15 +190,6 @@ Each file contains 2 layers: `sst` and `ssta`
 
 ``` r
 library(stars)
-```
-
-    ## Loading required package: abind
-
-    ## Loading required package: sf
-
-    ## Linking to GEOS 3.7.2, GDAL 3.0.4, PROJ 6.3.2
-
-``` r
 s <- read_stars(names(ok))
 ```
 
@@ -110,14 +201,9 @@ s
 
     ## stars object with 4 dimensions and 2 attributes
     ## attribute(s):
-    ##     sst [°C]        ssta [°C]     
-    ##  Min.   :-1.800   Min.   :-4.764  
-    ##  1st Qu.: 1.054   1st Qu.:-0.383  
-    ##  Median :14.790   Median :-0.036  
-    ##  Mean   :13.511   Mean   :-0.074  
-    ##  3rd Qu.:24.981   3rd Qu.: 0.210  
-    ##  Max.   :30.338   Max.   : 1.591  
-    ##  NA's   :5032     NA's   :5032    
+    ##                Min.    1st Qu.      Median      Mean    3rd Qu.      Max. NA's
+    ## sst [°C]  -1.800000  1.0544319 14.78977919 13.511017 24.9811244 30.338427 5032
+    ## ssta [°C] -4.763667 -0.3827269 -0.03591257 -0.074074  0.2097073  1.591403 5032
     ## dimension(s):
     ##      from  to     offset delta refsys point values x/y
     ## x       1 180         -1     2     NA    NA   NULL [x]
@@ -143,19 +229,19 @@ db <- fetch_ersst(dates, version = 'v5', path = root_path, verbose = TRUE, avail
     ## fetch_ersst: building request list
     ## fetch_ersst: pooling databases
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202011.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202011.nc 
+    ## download_ersst: to /var/folders/gt/b3frwyjd7djdf8l4wvcxx7ww0000gp/T//RtmpjTHDkR/ersst.v5.202011.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/ersst.v5.202011.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/erssta.v5.202011.tif 
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202012.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202012.nc 
+    ## download_ersst: to /var/folders/gt/b3frwyjd7djdf8l4wvcxx7ww0000gp/T//RtmpjTHDkR/ersst.v5.202012.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/ersst.v5.202012.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2020/erssta.v5.202012.tif 
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202101.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202101.nc 
+    ## download_ersst: to /var/folders/gt/b3frwyjd7djdf8l4wvcxx7ww0000gp/T//RtmpjTHDkR/ersst.v5.202101.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/ersst.v5.202101.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/erssta.v5.202101.tif 
     ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202102.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202102.nc 
+    ## download_ersst: to /var/folders/gt/b3frwyjd7djdf8l4wvcxx7ww0000gp/T//RtmpjTHDkR/ersst.v5.202102.nc 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/ersst.v5.202102.tif 
     ## fetch_ersst: writing file ~/ersst_data/v5/2021/erssta.v5.202102.tif
 
@@ -163,7 +249,7 @@ db <- fetch_ersst(dates, version = 'v5', path = root_path, verbose = TRUE, avail
 db
 ```
 
-    ## # A tibble: 8 x 3
+    ## # A tibble: 8 × 3
     ##   date       anomaly version
     ##   <date>     <lgl>   <chr>  
     ## 1 2020-11-01 FALSE   v5     

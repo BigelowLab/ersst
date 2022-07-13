@@ -8,7 +8,7 @@
 compose_filename <- function(x, path = ".", ext = ".tif"){
   name <- ifelse(x$anomaly, "erssta", "ersst")
   file.path(path,
-            x$version,
+#            x$version,
             format(x$date, "%Y"),
             sprintf("%s.%s.%s%s", name, x$version, format(x$date, "%Y%m"), ext[1]))
 }

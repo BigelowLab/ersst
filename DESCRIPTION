@@ -18,9 +18,10 @@ Imports:
     sf,
     stars,
     ncdf4,
+    PCICt,
     xyzt
 Maintainer: Ben Tupper <btupper@bigelow.org>
 Author: Ben Tupper <btupper@bigelow.org>, Johnathan Evanilla <jevanilla@bigelow.org>
 License: MIT + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1

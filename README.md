@@ -3,8 +3,9 @@ ERSST
 
 # ersst
 
-Provides for download, archiving and access to
-[errst](https://www.ncdc.noaa.gov/data-access/marineocean-data/extended-reconstructed-sea-surface-temperature-ersst-v5)
+Provides for download, archiving and access to [Extended Reconstructed
+Sea Surface Temperature
+‘ersst’](https://www.ncei.noaa.gov/products/extended-reconstructed-sst)
 online and local datasets.
 
 ### [Citation](https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00927)
@@ -13,196 +14,109 @@ online and local datasets.
 
 ### Requirements
 
-  - [R v4+](https://www.r-project.org/)
-  - [rlang](https://CRAN.R-project.org/package=rlang)
-  - [dplyr](https://CRAN.R-project.org/package=dplyr)
-  - [readr](https://CRAN.R-project.org/package=readr)
-  - [terra](https://CRAN.R-project.org/package=terra)
-  - [xml2](https://CRAN.R-project.org/package=xml2)
-  - [httr](https://CRAN.R-project.org/package=httr)
-  - [rvest](https://github.com/BigelowLab/rvest)
+From CRAN…
+
+- [R v4+](https://www.r-project.org/)
+- [rlang](https://CRAN.R-project.org/package=rlang)
+- [dplyr](https://CRAN.R-project.org/package=dplyr)
+- [readr](https://CRAN.R-project.org/package=readr)
+- [terra](https://CRAN.R-project.org/package=terra)
+- [xml2](https://CRAN.R-project.org/package=xml2)
+- [httr](https://CRAN.R-project.org/package=httr)
+- [rvest](https://CRAN.R-project.org/package=rvest)
+- [stars](https://CRAN.R-project.org/package=stars)
+- [PCICt](https://CRAN.R-project.org/package=PCICt)
 
 ### Installation
 
     remotes::install_github("BigelowLab/ersst")
 
-### List available file online
-
-It is easy to generate a listing of data files, organized by month, that
-are [available
-online](https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/).
+### Usage
 
 ``` r
-library(dplyr)
-library(ersst)
-
-online_db <- ncdc_list_available(version = "v5", verbose = TRUE)
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(sf)
+  library(ersst)
+  library(stars)
+})
 ```
 
-    ## ncdc_list_available: GETting https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/
+#### Working with points.
+
+We provide a small example of points from locations associated with
+buoys off of the US southeast coast.
 
 ``` r
-online_db
+# read in example South Atlantic Bight points
+x <- read_sab()
+
+# generate a ersst url for a given date
+url <- ersst_url("2018-12-18")
+
+# download
+temp_file <- tempfile(fileext = ".nc")
+ok <- download.file(url, temp_file)
+
+# open the resource
+X <- ncdf4::nc_open(temp_file)
+
+# extract the data 
+covars <- ersst::extract(x, X, varname = ersst_vars(X))
+
+# bind to the input
+(y <- dplyr::bind_cols(x, covars))
 ```
 
-    ## # A tibble: 2,007 x 3
-    ##    date       anomaly version
-    ##    <date>     <lgl>   <chr>  
-    ##  1 1854-01-01 FALSE   v5     
-    ##  2 1854-02-01 FALSE   v5     
-    ##  3 1854-03-01 FALSE   v5     
-    ##  4 1854-04-01 FALSE   v5     
-    ##  5 1854-05-01 FALSE   v5     
-    ##  6 1854-06-01 FALSE   v5     
-    ##  7 1854-07-01 FALSE   v5     
-    ##  8 1854-08-01 FALSE   v5     
-    ##  9 1854-09-01 FALSE   v5     
-    ## 10 1854-10-01 FALSE   v5     
-    ## # … with 1,997 more rows
+    ## Simple feature collection with 5 features and 6 fields
+    ## Geometry type: POINT
+    ## Dimension:     XY
+    ## Bounding box:  xmin: 279.815 ymin: 28.508 xmax: 287.752 ymax: 34.714
+    ## Geodetic CRS:  WGS 84
+    ## # A tibble: 5 × 7
+    ##      id name     depth time                            geom   sst  ssta
+    ## * <dbl> <chr>    <dbl> <dttm>                   <POINT [°]> <dbl> <dbl>
+    ## 1 41009 Canveral  -1.5 2022-06-17 14:05:06 (279.815 28.508)  24.9 0.619
+    ## 2 41010 Canaver…  -1.5 2022-06-29 14:05:06 (281.515 28.878)  25.3 0.708
+    ## 3 41002 South H…  -1.5 2022-06-05 14:05:06 (285.064 31.759)  23.2 0.745
+    ## 4 41001 East Ha…  -2   2022-04-30 14:05:06 (287.752 34.714)  22.2 0.706
+    ## 5 41004 EDISTO    -1.5 2022-07-11 14:05:06 (280.901 32.502)  23.4 0.680
 
-The anomaly column indicates if the file is for `sst` or `sst anomaly` -
-a bit of a red herring in this case. It will become important later, but
-in the meantime know that each online file contains 2 layers: `sst` or
-`sst anomaly (ssta)`. The anomaly computation is [discussed
-here](https://www.ncdc.noaa.gov/data-access/marineocean-data/extended-reconstructed-sea-surface-temperature-ersst-v5).
+#### Working with bounding boxes (from points or polygons).
 
-### Download online data
-
-For a URL by date and version, then download.
+Learn more about working with
+[stars](https://CRAN.R-project.org/package=stars) objects in the
+[vignettes](https://r-spatial.github.io/stars/). Here we drop time and
+depth as the ERSST data has only one depth and each file holds one time.
 
 ``` r
-uri <- ncdc_build_uri(as.Date("1995-12-18"), version = "v5")
-# [1] "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.20199512.nc"
-ok <- download_ersst(uri, path = ".", verbose = TRUE)
+# derive the bounding box of the points and convert to sf coordinates
+bb = sf::st_bbox(x) |>
+  sf::st_as_sfc()
+
+(covars <- ersst::extract(bb, X, varnames = ersst::ersst_vars(X)))
 ```
 
-    ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.199512.nc 
-    ## download_ersst: to ./ersst.v5.199512.nc
-
-``` r
-ok
-```
-
-    ## ./ersst.v5.199512.nc 
-    ##                 TRUE
-
-Each file contains 2 layers: `sst` and `ssta`
-
-``` r
-library(stars)
-```
-
-    ## Loading required package: abind
-
-    ## Loading required package: sf
-
-    ## Linking to GEOS 3.7.2, GDAL 3.0.4, PROJ 6.3.2
-
-``` r
-s <- read_stars(names(ok))
-```
-
-    ## sst, ssta,
-
-``` r
-s
-```
-
-    ## stars object with 4 dimensions and 2 attributes
+    ## stars object with 2 dimensions and 1 attribute
     ## attribute(s):
-    ##     sst [°C]        ssta [°C]     
-    ##  Min.   :-1.800   Min.   :-4.764  
-    ##  1st Qu.: 1.054   1st Qu.:-0.383  
-    ##  Median :14.790   Median :-0.036  
-    ##  Mean   :13.511   Mean   :-0.074  
-    ##  3rd Qu.:24.981   3rd Qu.: 0.210  
-    ##  Max.   :30.338   Max.   : 1.591  
-    ##  NA's   :5032     NA's   :5032    
+    ##          Min.  1st Qu.   Median     Mean  3rd Qu.     Max. NA's
+    ## sst  16.24087 22.10199 23.56519 22.89823 24.44305 25.33899    7
     ## dimension(s):
-    ##      from  to     offset delta refsys point values x/y
-    ## x       1 180         -1     2     NA    NA   NULL [x]
-    ## y       1  89         89    -2     NA    NA   NULL [y]
-    ## lev     1   1      0 [m]    NA     NA    NA   NULL    
-    ## time    1   1 1995-12-01    NA  PCICt    NA   NULL
+    ##   from to offset  delta refsys x/y
+    ## x    1  6  279.8  1.323 WGS 84 [x]
+    ## y    1  5  34.71 -1.241 WGS 84 [y]
 
-### Download a series, unpack and save
-
-If you are developing a local repository of the data, you can use
-built-in capabilities of `fetch_ersst()`. Each layer is saved separately
-as either `ersst.vv.YYYYmm.tif` or `erssta.vv.YYYYmm.tif`. Returned is a
-database of the fetched-and-stored contents. Note that you can pass in
-the available online database listing; this just saves the time needed
-to repeat the query.
+Now let’s see what it looks like on a quick map.
 
 ``` r
-root_path <- "~/ersst_data"
-dates <- seq(from = as.Date("2020-11-15"), by = "month", length = 4)
-db <- fetch_ersst(dates, version = 'v5', path = root_path, verbose = TRUE, avail_db = online_db)
+plot(covars, attr = 'sst', axes = TRUE, reset = FALSE)
+plot(sf::st_geometry(x), add = TRUE, col = "orange", 
+     pch = 19, cex = 2)
 ```
 
-    ## fetch_ersst: building request list
-    ## fetch_ersst: pooling databases
-    ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202011.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202011.nc 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2020/ersst.v5.202011.tif 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2020/erssta.v5.202011.tif 
-    ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202012.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202012.nc 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2020/ersst.v5.202012.tif 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2020/erssta.v5.202012.tif 
-    ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202101.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202101.nc 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2021/ersst.v5.202101.tif 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2021/erssta.v5.202101.tif 
-    ## download_ersst: downloading https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5.202102.nc 
-    ## download_ersst: to /tmp/RtmpsDLdLE/ersst.v5.202102.nc 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2021/ersst.v5.202102.tif 
-    ## fetch_ersst: writing file ~/ersst_data/v5/2021/erssta.v5.202102.tif
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ``` r
-db
+# cleanup
+ncdf4::nc_close(X)
 ```
-
-    ## # A tibble: 8 x 3
-    ##   date       anomaly version
-    ##   <date>     <lgl>   <chr>  
-    ## 1 2020-11-01 FALSE   v5     
-    ## 2 2020-11-01 TRUE    v5     
-    ## 3 2020-12-01 FALSE   v5     
-    ## 4 2020-12-01 TRUE    v5     
-    ## 5 2021-01-01 FALSE   v5     
-    ## 6 2021-01-01 TRUE    v5     
-    ## 7 2021-02-01 FALSE   v5     
-    ## 8 2021-02-01 TRUE    v5
-
-You will likely want to save this database. Note that it is best to save
-it with the version. Who knows when the next version will be released,
-but best practice is to be ready for it. If you have an existing
-database, you can append the new database to it before saving (see
-`append_database`).
-
-``` r
-v5_path <- ersst_path("v5", root = root_path)
-db <- write_database(db, v5_path)
-```
-
-### Using the local database
-
-If you have kept a database file (and if you mess your up, see
-`build_database()`) then you can use it to easily find the files you
-want without having to search the directories.
-
-``` r
-library(stars)
-sub_db <- read_database(v5_path) %>%
-  filter(anomaly == TRUE, 
-         between(date, as.Date("2020-11-01"), as.Date("2021-02-01")))
-sub_filenames <- compose_filename(sub_db, root_path)
-ss <- read_stars(sub_filenames, along = "band")
-breaks <- 11
-plot(ss, 
-     main = format(sub_db$date, "anomaly %Y-%b"),
-     col = heat.colors(breaks))
-```
-
-![](README_files/figure-gfm/filter_database-1.png)<!-- -->

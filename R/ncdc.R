@@ -46,7 +46,7 @@ ncdc_list_available <- function(version = "v5", simplify = TRUE, verbose = FALSE
     xml2::xml_child(search = "table") %>%
     rvest::html_table() %>%
     dplyr::as_tibble() %>%
-    dplyr::filter(grepl("ersst", .data$Name, fixed = TRUE))
+    dplyr::filter(grepl("^ersst\\..*\\.nc$", .data$Name))
 
   if (simplify){
     if (verbose) ("ncdc_list_available: simplifying\n")

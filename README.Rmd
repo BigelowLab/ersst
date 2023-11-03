@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # ersst
 
-Provides for download, archiving and access to [Extended Reconstructed Sea Surface Temperature 'ersst'](https://www.ncdc.noaa.gov/data-access/marineocean-data/extended-reconstructed-sea-surface-temperature-ersst-v5) online and local datasets.
+Provides for download, archiving and access to [Extended Reconstructed Sea Surface Temperature 'ersst'](https://www.ncei.noaa.gov/products/extended-reconstructed-sst) online and local datasets.
 
 ### [Citation](https://www.ncei.noaa.gov/access/metadata/landing-page/bin/iso?id=gov.noaa.ncdc:C00927)
 
@@ -32,10 +32,6 @@ From CRAN...
   + [stars](https://CRAN.R-project.org/package=stars)
   + [PCICt](https://CRAN.R-project.org/package=PCICt)
 
-From github...
-
-  + [xyzt](https://CRAN.R-project.org/package=)
-
 ### Installation
 
 ```
@@ -49,7 +45,6 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(sf)
   library(ersst)
-  library(xyzt)
   library(stars)
 })
 
@@ -57,14 +52,11 @@ suppressPackageStartupMessages({
 
 #### Working with points.  
 
-See the [xyzt](https://github.com/BigelowLab/xyzt) package for more details on the example Southern US Atlantic Bight data. These locations are associated with buoys off of the US southeast coast.
+We provide a small example of points from locations associated with buoys off of the US southeast coast.
 
 ```{r}
-# read in example SAB points
-x <- xyzt::read_sab() |>
-  dplyr::select(-time, -depth) |>
-  dplyr::mutate(lon = xyzt::to_360(lon)) |>
-  xyzt::as_POINT()
+# read in example South Atlantic Bight points
+x <- read_sab()
 
 # generate a ersst url for a given date
 url <- ersst_url("2018-12-18")
@@ -88,23 +80,16 @@ covars <- ersst::extract(x, X, varname = ersst_vars(X))
 Learn more about working with [stars](https://CRAN.R-project.org/package=stars) objects in the [vignettes](https://r-spatial.github.io/stars/).  Here we drop time and depth as the ERSST data has only one depth and each file holds one time.
 
 ```{r}
-# read in example SAB points
-x <- xyzt::read_sab() |>
-  dplyr::select(-time, -depth) |>
-  dplyr::mutate(lon = xyzt::to_360(lon)) |>
-  xyzt::as_BBOX()
+# derive the bounding box of the points and convert to sf coordinates
+bb = sf::st_bbox(x) |>
+  sf::st_as_sfc()
 
-(covars <- ersst::extract(x, X, varnames = ersst::ersst_vars(X)))
+(covars <- ersst::extract(bb, X, varnames = ersst::ersst_vars(X)))
 ```
 
 Now let's see what it looks like on a quick map.
 
 ```{r}
-x <- xyzt::read_sab() |>
-  dplyr::select(-time, -depth) |>
-  dplyr::mutate(lon = xyzt::to_360(lon)) |>
-  xyzt::as_POINT()
-
 plot(covars, attr = 'sst', axes = TRUE, reset = FALSE)
 plot(sf::st_geometry(x), add = TRUE, col = "orange", 
      pch = 19, cex = 2)

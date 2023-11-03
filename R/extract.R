@@ -28,7 +28,7 @@ extract.sf <- function(x, y = NULL,
                        varname = ersst_vars(y),
                        verbose = FALSE, ...){
   
-  typ <- xyzt::get_geometry_type(x)
+  typ <- get_geometry_type(x)
   if (verbose[1]) {
     cat("extract.sf typ =", typ, "\n" )
     cat("  varname:", paste(varname, collapse = ", "), "\n")
@@ -38,7 +38,10 @@ extract.sf <- function(x, y = NULL,
            g <- sf::st_geometry(x)
            r <- extract(g, y = y, varname = varname, verbose = verbose, ...)
           },
-         #"BBOX" = {do something ?}
+         "bbox" = {
+           g = sf::st_as_sfc(x)
+           r <- extract(g, y = y, varname = varname, verbose = verbose, ...)
+         },
          "POLYGON" = {
            g <- sf::st_geometry(x)
            ss <- lapply(varname,
@@ -94,12 +97,6 @@ extract.sfc_POINT <- function(x, y = NULL,
     dplyr::bind_cols()
 }
 
-
-
-
-
-
-
 #' @export
 #' @param x \code{sfc} object that defines a bounding box
 #' @param y \code{ncdf4} object 
@@ -108,7 +105,7 @@ extract.sfc_POINT <- function(x, y = NULL,
 #' @describeIn extract Extract data from a NCDF4 object using sf POLYGON object
 extract.sfc_POLYGON <- function(x, y = NULL, varname = ersst_vars(y)[1], ...){
   
-    #bb <- xyzt::as_BBOX(x)
+
     nav <- ersst_nc_nav_bb(y, x, varname = varname)
     m <- ncdf4::ncvar_get(y, varid = varname,
                      start = nav$start, count = nav$count)

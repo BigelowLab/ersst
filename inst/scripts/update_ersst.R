@@ -16,10 +16,10 @@ Args = argparser::arg_parser("Update your local ERSST data repository",
 
 v_path = file.path(Args$path, Args$version)
 logger::log_formatter(logger::formatter_sprintf)
-logger::log_appender(logger::appender_file(file.path(Args$path, "log")))
+logger::log_appender(logger::appender_tee(file.path(Args$path, "log")))
 log_info("updating version %s", Args$version)
 
-dbfile = file.path(v_path, "databas.csv.gz")
+dbfile = file.path(v_path, "database.csv.gz")
 local_db <- if(file.exists(dbfile)){
     ersst::read_database(v_path)
   } else {
@@ -27,7 +27,8 @@ local_db <- if(file.exists(dbfile)){
       dplyr::slice(0)
   }
 log_info("gathering online listing of available dates")
-avail_db <- ersst::ncdc_list_available(version = Args$version)
+avail_db <- ersst::ncdc_list_available(version = Args$version) |>
+  na.omit()
 
 need_db <- avail_db %>%
   dplyr::filter(!(date %in% local_db$date))

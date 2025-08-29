@@ -17,7 +17,7 @@ Provides for download, archiving and access to [Extended Reconstructed Sea Surfa
 Boyin Huang, Peter W. Thorne, Viva F. Banzon, Tim Boyer, Gennady Chepurin, Jay H. Lawrimore, Matthew J. Menne, Thomas M. Smith, Russell S. Vose, and Huai-Min Zhang (2017): NOAA Extended Reconstructed Sea Surface Temperature (ERSST), Version 5. NOAA National Centers for Environmental Information. doi:10.7289/V5T72FNM [access date, monthly from 2021-04-15].
 ```
 
-### Requirements
+## Requirements
 
 From CRAN...
 
@@ -32,7 +32,7 @@ From CRAN...
   + [stars](https://CRAN.R-project.org/package=stars)
   + [PCICt](https://CRAN.R-project.org/package=PCICt)
 
-### Installation
+## Installation
 
 ```
 remotes::install_github("BigelowLab/ersst")
@@ -101,3 +101,37 @@ plot(sf::st_geometry(x), add = TRUE, col = "orange",
 ncdf4::nc_close(X)
 ```
 
+## Local database
+
+If you desire to build a local database of the ERSST dataset, you can use the 
+[update_ersst.R script](inst/scripts/update_ersst.R).  First you need to set the path for the local database using something like this.
+
+```
+ersst::set_root_path("/mnt/s1/projects/ecocast/coredata/ersst")
+```
+Obviously, you would substitute in your own path. Thereafter for any R session you can retrieve that path like this.  Note that we need to specify the version we are interested in.  At the time of this compostion, we only know about `v5` but we are totally ready for `v6`.
+
+```{r get_path}
+path = ersst_path("v5")
+```
+
+Now you can run the `update_ersst.R` script to build your database.  See the script docs for details.  Once you have the database you can read it in.
+
+```{r read_database}
+db = read_database(path) |>
+  print()
+```
+
+This can be filtered for a particular item (or items!)
+
+```{r filter}
+this_db = filter(db,
+                 date %in% as.Date(c("1995-12-01", "1996-01-01", "1996-02-01")))
+this_db
+```
+Now read the data.
+
+```{r read}
+x = read_ersst(this_db, path)
+x
+```

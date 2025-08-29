@@ -148,6 +148,15 @@ fetch_ersst <- function(date = Sys.Date(),
                         verbose = FALSE){
 
 
+  if (FALSE){
+    date = Sys.Date()
+    version = "v5"
+    path = "./ersst_data"
+    avail_db = NULL
+    overwrite = TRUE
+    verbose = FALSE
+  }
+  
   # generate REQUEST uris
   # list the resources available as AVAILable
   # compare REQUEST and AVAIL
@@ -160,7 +169,7 @@ fetch_ersst <- function(date = Sys.Date(),
   request_db <- decompose_filename(request_uri, ext = ".nc")
   if (is.null(avail_db)) avail_db <- ncdc_list_available(version = version,
                                                          verbose = verbose)
-
+  path = file.path(path[1], version[1])
   fetch_one <- function(x, key, path = "."){
     ok <- download_ersst(x$uri, verbose = verbose)
     if (ok){

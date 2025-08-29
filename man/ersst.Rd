@@ -2,8 +2,16 @@
 % Please edit documentation in R/ersst-package.R
 \docType{package}
 \name{ersst}
+\alias{ersst-package}
 \alias{ersst}
 \title{ersst: Simplified access to ERSST (Extended Reconstructed Sea Surface Temperature) data from R.}
 \description{
 Simplified access to ERSST (Extended Reconstructed daily SST) data from R.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/BigelowLab/ersst}
+}
+
 }

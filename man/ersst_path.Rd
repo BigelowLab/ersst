@@ -4,10 +4,10 @@
 \alias{ersst_path}
 \title{Retrieve the ERSST path}
 \usage{
-ersst_path(..., root = "/mnt/ecocast/coredata/ersst")
+ersst_path(..., root = root_path())
 }
 \arguments{
-\item{...}{path segments inlcuding version as 'v5' or 'v4'}
+\item{...}{path segments including version as 'v5' or 'v4'}
 
 \item{root}{character, the path to the ersst directory}
 }
